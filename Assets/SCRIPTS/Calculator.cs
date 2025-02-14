@@ -155,9 +155,9 @@ public class Calculator : MonoBehaviour
 
 	}
 
-	public void Save()
+	public void SaveToOrdersHistory()
 	{
-
+		//CustomerID,PrinerID,FilamentID,Magin,PrintWeight,ElectricityCost,PrintingTime,FinalCost
 
 
 	}
