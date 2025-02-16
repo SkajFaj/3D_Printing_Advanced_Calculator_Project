@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using TMPro;
@@ -27,7 +29,6 @@ public class Warehouse : MonoBehaviour
 	private int printerID, customerID, filamentID, orderID;
 	private Dictionary<int, Dictionary<string, string>> currentDatabase;
 	private string currentFieldName;
-	private string lastIDSelected = "1";
 	// Start is called before the first frame update
 	void Start()
 	{
@@ -54,6 +55,7 @@ public class Warehouse : MonoBehaviour
 
 	public void ChangeDatabaseView()
 	{
+		databasesData[(Database)Enum.Parse(typeof(Database), dropdownDatabase.options[dropdownDatabase.value].text)] = databasesData[(Database)Enum.Parse(typeof(Database), dropdownDatabase.options[dropdownDatabase.value].text)].OrderBy(x => x.Key).ToDictionary(x => x.Key, x => x.Value);
 		currentDatabase = databasesData[(Database)Enum.Parse(typeof(Database), dropdownDatabase.options[dropdownDatabase.value].text)];
 		
 		// Convert the currentDatabase dictionary to a readable string format
@@ -82,7 +84,7 @@ public class Warehouse : MonoBehaviour
 
 	public void ResetID()
 	{
-		selectID_InputField.text = "";
+		selectID_InputField.text = "1";
 	}
 
 	public void OnDropdownFieldChanged()
@@ -110,24 +112,60 @@ public class Warehouse : MonoBehaviour
 			editValue_InputField.text = "";
 			return;
 		}
+		if (int.Parse(selectID_InputField.text) < 1)
+			selectID_InputField.text = "1";
 
-		//if (!currentDatabase.ContainsKey(int.Parse(selectID_InputField.text)))
-		//	selectID_InputField.text = lastIDSelected;
-		lastIDSelected = selectID_InputField.text;
 		OnDropdownFieldChanged();
 	}
 
 	public void SaveDatabase()
 	{
-		transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.transform.parent = null;
+		string databaseName = dropdownDatabase.options[dropdownDatabase.value].text;
+		string oldFileFullPath = CSVFile.path + databaseName + ".csv";
+		string newFilefullPath = CSVFile.path + databaseName + "TEMP.csv";
+		CSVFile.SaveFile(newFilefullPath, databasesData[(Database)Enum.Parse(typeof(Database), databaseName)]);
+		File.Delete(oldFileFullPath);
+		File.Move(newFilefullPath, oldFileFullPath);
 	}
 
 	public void NewEntry()
 	{
-		int newIndex = currentDatabase.ContainsKey(int.Parse(selectID_InputField.text)) ? currentDatabase.Max(x => x.Key) + 1 : int.Parse(selectID_InputField.text);
+		int selectedID;
+		if (!int.TryParse(selectID_InputField.text, out selectedID))
+			selectedID = 1;
+
+		#region newIndex
+
+		int newIndex = selectedID;
+		if (currentDatabase.Count == 0)
+			newIndex = 1;
+		else if (currentDatabase.ContainsKey(selectedID))
+		{
+			// Get biggest index + 1
+			//newIndex = currentDatabase.Max(x => x.Key) + 1;
+
+			// Get next biggest index
+			newIndex = currentDatabase.Where(x => x.Key >= selectedID).Max(x => x.Key) + 1;
+			int lastKey = currentDatabase.Where(x => x.Key >= selectedID).ElementAt(0).Key;
+			foreach (var key in currentDatabase.Keys.Where(x => x >= selectedID))
+			{
+				if (key - lastKey == 1)
+				{
+					lastKey = key;
+					continue;
+				}
+				else if (key - lastKey > 1)
+				{
+					newIndex = lastKey+1;
+					break;
+				}
+			}
+		}
+
+		#endregion
+
 		currentDatabase.Add(newIndex, currentDatabase.ElementAt(0).Value.ToDictionary(entry => entry.Key, entry => ""));
 		selectID_InputField.text = newIndex.ToString();
-		lastIDSelected = newIndex.ToString();
 		dropdownField.value = 0;
 
 		ChangeDatabaseView();
@@ -140,10 +178,29 @@ public class Warehouse : MonoBehaviour
 
 		currentDatabase.Remove(int.Parse(selectID_InputField.text));
 		ChangeDatabaseView();
-		selectID_InputField.text = "";
-		lastIDSelected = "1";
+		if (currentDatabase.Count > 0)
+		{
+			try
+			{
+				selectID_InputField.text = currentDatabase.Where(x => x.Key < int.Parse(selectID_InputField.text)).Max(x => x.Key).ToString();
+			}
+			catch
+			{
+				try
+				{
+					selectID_InputField.text = currentDatabase.Where(x => x.Key > int.Parse(selectID_InputField.text)).Min(x => x.Key).ToString();
+				}
+				catch
+				{
+					selectID_InputField.text = "1";
+				}
+			}
+		}
+		else
+		{
+			selectID_InputField.text = "1";
+		}
 		OnDropdownFieldChanged();
-		//lastIDSelected
 		//currentDatabase
 	}
 

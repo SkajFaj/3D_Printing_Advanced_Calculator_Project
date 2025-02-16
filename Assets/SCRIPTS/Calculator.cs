@@ -6,6 +6,8 @@ using UnityEngine;
 using System.Linq;
 using UnityEngine.UI;
 using static DatabaseCSV_Manager;
+using System;
+using System.IO;
 
 public class Calculator : MonoBehaviour
 {
@@ -32,6 +34,7 @@ public class Calculator : MonoBehaviour
 	public GameObject customMarginSwitcher;
 	public TMP_InputField customMargin;
 	private float margin = 0f;
+	private float finalMargin;
 
 	private int printerID, customerID, filamentID;
 
@@ -39,7 +42,7 @@ public class Calculator : MonoBehaviour
 
 	//SELEKTOR FILAMENTU
 	private float filamentPricePerKilogram;
-
+	private float materialCosted;
 	public TMP_Dropdown filamentDropdown;
 
 
@@ -64,6 +67,7 @@ public class Calculator : MonoBehaviour
 
 	//STAWKA ENERGETYCZNA
 	private float electricityCost;
+	private float energyCosted;
 	public TMP_InputField electricityCost_InputField;
 
 
@@ -143,10 +147,11 @@ public class Calculator : MonoBehaviour
 
 
 		// OBLICZANIE FNALNEGO KOSZTU DRUKU
-		finalCost = (((float.Parse(databasesData[Database.printers][printerID]["PowerConsumption"]) / 1000f) * 
-					(printingTimeInMinutes / 60f) * electricityCost) + //koszt pr¹du
-					(printWeight / 1000f) * float.Parse(databasesData[Database.filaments][filamentID]["PricePerKilogram"])) * //koszt materia³u
-					(1 + (margin / 100)); //mar¿a
+		energyCosted = (float.Parse(databasesData[Database.printers][printerID]["PowerConsumption"]) / 1000f) * (printingTimeInMinutes / 60f) * electricityCost;
+		materialCosted = (printWeight / 1000f) * float.Parse(databasesData[Database.filaments][filamentID]["PricePerKilogram"]);
+		finalMargin = 1 + (margin / 100);
+
+		finalCost = (energyCosted + materialCosted) * finalMargin;
 
 
 		//wyœwietlenie wyniku w GUI
@@ -158,8 +163,42 @@ public class Calculator : MonoBehaviour
 	public void SaveToOrdersHistory()
 	{
 		//CustomerID,PrinerID,FilamentID,Magin,PrintWeight,ElectricityCost,PrintingTime,FinalCost
+		string finalCostText;
+		finalCostText = finalCost.ToString().Replace(',',';');
 
+		int newIndex;
+		try
+		{
+			newIndex = databasesData[Database.ordersHistory].Max(x => x.Key) + 1;
+		}
+		catch
+		{
+			newIndex = 1;
+		}
+		databasesData[Database.ordersHistory].Add(newIndex, new()
+		{
+			//{"Customer", ("\n - CustomerID " + customerID.ToString() + "\n - CustomerName " + databasesData[Database.customers][customerID]["FirstName"] + " " + databasesData[Database.customers][customerID]["LastName"])},
+			//{"Priner", ("PrinerID " + filamentID.ToString() + "PrinterName " + databasesData[Database.printers][printerID]["Brand"] + " " + databasesData[Database.printers][printerID]["Model"])},
+			//{"Filament", ("FilamentID " + printerID.ToString() + "FilamentName " + databasesData[Database.filaments][filamentID]["Brand"] + " " + databasesData[Database.filaments][filamentID]["Type"])},
+			{"CustomerID", printWeight.ToString()},
+			{"PrinterID", printWeight.ToString()},
+			{"FilamentID", printWeight.ToString()},
+			{"PrintWeight", printWeight.ToString()},
+			{"MaterialCost", materialCosted.ToString()},
+			{"EnergyCost", energyCosted.ToString()},
+			{"PrintingTime", printingTimeInMinutes.ToString()},
+			{"Magin", finalMargin.ToString()},
+			{"FinalCost", finalCostText},
+			{"OrderDate", DateTime.Now.ToString()},
+			{"Status", "Waiting"}
+		});
 
+		string databaseName = "ordersHistory";
+		string oldFileFullPath = CSVFile.path + databaseName + ".csv";
+		string newFilefullPath = CSVFile.path + databaseName + "TEMP.csv";
+		CSVFile.SaveFile(newFilefullPath, databasesData[(Database)Enum.Parse(typeof(Database), databaseName)]);
+		File.Delete(oldFileFullPath);
+		File.Move(newFilefullPath, oldFileFullPath);
 	}
 
 
