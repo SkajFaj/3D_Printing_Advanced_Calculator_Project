@@ -165,6 +165,11 @@ public class Calculator : MonoBehaviour
 		//CustomerID,PrinerID,FilamentID,Magin,PrintWeight,ElectricityCost,PrintingTime,FinalCost
 		string finalCostText;
 		finalCostText = finalCost.ToString().Replace(',',';');
+		string energyCostText = energyCosted.ToString().Replace(',', ';');
+		string materialCostText = materialCosted.ToString().Replace(',', ';');
+		string printWeightText = printWeight.ToString().Replace(',', ';');
+		string printingTimeText = printingTimeInMinutes.ToString().Replace(',', ';');
+		string finalMarginText = finalMargin.ToString().Replace(',', ';');
 
 		int newIndex;
 		try
@@ -177,17 +182,14 @@ public class Calculator : MonoBehaviour
 		}
 		databasesData[Database.ordersHistory].Add(newIndex, new()
 		{
-			//{"Customer", ("\n - CustomerID " + customerID.ToString() + "\n - CustomerName " + databasesData[Database.customers][customerID]["FirstName"] + " " + databasesData[Database.customers][customerID]["LastName"])},
-			//{"Priner", ("PrinerID " + filamentID.ToString() + "PrinterName " + databasesData[Database.printers][printerID]["Brand"] + " " + databasesData[Database.printers][printerID]["Model"])},
-			//{"Filament", ("FilamentID " + printerID.ToString() + "FilamentName " + databasesData[Database.filaments][filamentID]["Brand"] + " " + databasesData[Database.filaments][filamentID]["Type"])},
-			{"CustomerID", printWeight.ToString()},
-			{"PrinterID", printWeight.ToString()},
-			{"FilamentID", printWeight.ToString()},
-			{"PrintWeight", printWeight.ToString()},
-			{"MaterialCost", materialCosted.ToString()},
-			{"EnergyCost", energyCosted.ToString()},
-			{"PrintingTime", printingTimeInMinutes.ToString()},
-			{"Magin", finalMargin.ToString()},
+			{"CustomerID", customerID.ToString()},
+			{"PrinterID", printerID.ToString()},
+			{"FilamentID", filamentID.ToString()},
+			{"PrintWeight", printWeightText},
+			{"MaterialCost", materialCostText},
+			{"EnergyCost", energyCostText},
+			{"PrintingTime", printingTimeText},
+			{"Magin", finalMarginText},
 			{"FinalCost", finalCostText},
 			{"OrderDate", DateTime.Now.ToString()},
 			{"Status", "Waiting"}
